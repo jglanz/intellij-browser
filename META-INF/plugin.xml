@@ -2,16 +2,14 @@
   <id>org.jglanz.intellij.browser</id>
   <name>Browser Plugin</name>
   <version>1.0</version>
-  <vendor email="support@yourcompany.com" url="http://www.yourcompany.com">YourCompany</vendor>
+  <vendor email="jon at jonathanglanz.com" url="http://jonathanglanz.com">Jonathan Glanz</vendor>
 
   <description><![CDATA[
-      Enter short description for your plugin here.<br>
-      <em>most HTML tags may be used</em>
+      Finally a web browser in my intelliJ - yippie!
     ]]></description>
 
   <change-notes><![CDATA[
-      Add change notes here.<br>
-      <em>most HTML tags may be used</em>
+      THis is the first release - crossing our fingers that jxbrowser gives us a free license in perpetuity
     ]]>
   </change-notes>
 
@@ -25,7 +23,7 @@
   -->
 
   <extensions defaultExtensionNs="com.intellij">
-    <toolWindow id="JGWebBrowser"   secondary="false" icon="/icon.png" anchor="right" factoryClass="org.jglanz.intellij.browser.BrowserToolWindowFactory"   >
+    <toolWindow id="Web Browser"  secondary="false" icon="/icon.png" anchor="right" factoryClass="org.jglanz.intellij.browser.BrowserToolWindowFactory"   >
 
     </toolWindow>
   </extensions>

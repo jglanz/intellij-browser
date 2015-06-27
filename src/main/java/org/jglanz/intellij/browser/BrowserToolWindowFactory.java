@@ -14,7 +14,6 @@ import com.teamdev.jxbrowser.chromium.Browser;
 import com.teamdev.jxbrowser.chromium.events.StatusEvent;
 import com.teamdev.jxbrowser.chromium.events.StatusListener;
 import com.teamdev.jxbrowser.chromium.swing.BrowserView;
-import org.eclipse.swt.widgets.Display;
 
 import javax.swing.*;
 import java.awt.*;
