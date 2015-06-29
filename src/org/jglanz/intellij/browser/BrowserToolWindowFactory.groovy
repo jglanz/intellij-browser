@@ -38,13 +38,19 @@ import com.intellij.ui.content.Content;
 import com.intellij.ui.content.ContentFactory;
 import com.intellij.ui.content.ContentManagerEvent;
 import com.intellij.ui.content.ContentManagerListener
+import groovy.beans.Bindable
 import groovy.swing.SwingBuilder
 import groovy.util.logging.Slf4j;
-import javafx.application.Platform;
+import javafx.application.Platform
+import javafx.beans.value.ChangeListener
+import javafx.beans.value.ObservableValue
+import javafx.concurrent.Worker;
 import javafx.embed.swing.JFXPanel;
 import javafx.scene.Group;
-import javafx.scene.Scene;
+import javafx.scene.Scene
+import javafx.scene.web.WebEngine;
 import javafx.scene.web.WebView
+import org.jdesktop.swingx.JXPanel
 import org.jetbrains.annotations.NotNull;
 
 import javax.swing.*;
@@ -65,6 +71,14 @@ class BrowserToolWindowFactory implements ToolWindowFactory {
 	private JFXPanel fxPanel
 
 	WebView webView
+	WebEngine webEngine
+
+	UIState uiState = new UIState()
+
+	@Bindable
+	static class UIState {
+		boolean findVisible = false
+	}
 
 	public BrowserToolWindowFactory() {
 
@@ -78,18 +92,76 @@ class BrowserToolWindowFactory implements ToolWindowFactory {
 		def swing = new SwingBuilder()
 
 		fxPanel = new JFXPanel()
+		fxPanel.keyPressed = { KeyEvent e ->
+			if (e.modifiers & KeyEvent.VK_META && e.keyChar == 'f') {
+				println "Cmd f pressed"
+
+				uiState.findVisible = !uiState.findVisible
+			}
+		}
 
 		addressField = swing.textField()
 		browserToolWindowContent = swing.panel() {
-			borderLayout()
 
-			panel(constraints: BorderLayout.NORTH) {
-				borderLayout()
+			def findPanel, findField
+			def addTab
 
-				widget(addressField, constraints: BorderLayout.CENTER)
+			def executeFind = {
+				highlight(findField.text)
 			}
 
-			widget(fxPanel, constraints: BorderLayout.CENTER)
+			borderLayout()
+
+			vbox(constraints: BorderLayout.NORTH) {
+
+				//Address Panel
+				panel() {
+					borderLayout()
+					widget(addressField, constraints: BorderLayout.CENTER)
+				}
+
+				// Find panel
+				findPanel = panel(visible: bind(source: uiState, sourceProperty: "findVisible")) {
+					borderLayout()
+					findField = textField(constraints: BorderLayout.CENTER, actionPerformed: executeFind)
+
+					button(text: "Find", constraints: BorderLayout.EAST, actionPerformed: executeFind)
+				}
+
+			}
+
+			panel() {
+				borderLayout()
+				tabbedPane(constraints: BorderLayout.CENTER) {
+
+					addTab = { String name, String location ->
+
+
+						JFXPanel fx = new JFXPanel()
+						widget(fx, title: name)
+
+						onPlatform {
+							WebView wv = new WebView();
+							WebEngine we = wv.engine
+
+							Scene scene = new Scene(wv);
+							fx.setScene(scene);
+
+							we.load(location)
+
+						}
+
+						fx
+					}
+
+					addTab("ferrari", "http://www.ferrari.com")
+					addTab("google", "http://www.google.com")
+				}
+
+
+			}
+
+
 
 		}
 
@@ -113,17 +185,35 @@ class BrowserToolWindowFactory implements ToolWindowFactory {
 		println "Making browser"
 
 		webView = new WebView();
+		webEngine = webView.engine
+
 		Scene scene = new Scene(webView);
-
 		fxPanel.setScene(scene);
+		webView.getEngine().load("http://www.google.com")
 
-		webView.getEngine().load("http://www.google.com");
+		String lastSetLocation = null
 
+		webEngine.loadWorker.stateProperty().addListener(new ChangeListener<Worker.State>() {
+			@Override
+			void changed(ObservableValue<? extends Worker.State> observable, Worker.State oldValue, Worker.State newValue) {
+				if (newValue.equals(Worker.State.SUCCEEDED)) {
+					if (webEngine.loadWorker.state == Worker.State.SUCCEEDED) {
+						println "Loading libs for ${webEngine.location}"
+						ensureLibs()
 
+					}
+				}
+			}
+		});
 
 		webView.engine.onStatusChanged = { e ->
 			ApplicationManager.application.invokeLater({
-				addressField.text = webView.engine.location
+				if (!(webView.engine.location in [addressField.text, lastSetLocation])) {
+					lastSetLocation = addressField.text = webView.engine.location
+				}
+
+
+
 			} as Runnable)
 
 		}
@@ -131,6 +221,39 @@ class BrowserToolWindowFactory implements ToolWindowFactory {
 		addressField.actionPerformed = {
 			Platform.runLater({webView.getEngine().load(addressField.text)} as Runnable)
 
+		}
+	}
+
+	void onPlatform(Closure closure) {
+		Platform.runLater(closure as Runnable)
+	}
+
+	void ensureLibs() {
+		onPlatform() {
+			String script = BrowserToolWindowFactory.class.getResource("/js/libs.js").text
+			webEngine.executeScript("""
+	(function() {
+
+		${script};
+
+		var style = \$("<style>.highlight { background-color: yellow }</style>");
+		\$("head").append(style);
+
+
+	})();
+	""")
+		}
+	}
+
+
+	void highlight(String text) {
+		onPlatform() {
+			webEngine.executeScript("""
+var body = \$("body");
+body.removeHighlight();
+body.highlight("${text}");
+
+""")
 		}
 	}
 
