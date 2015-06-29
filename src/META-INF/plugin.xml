@@ -48,7 +48,7 @@
   -->
 
   <extensions defaultExtensionNs="com.intellij">
-    <toolWindow id="Web Browser"   secondary="false" icon="/icons/browser.png" anchor="right" factoryClass="org.jglanz.intellij.browser.BrowserToolWindowFactory" canCloseContents="true">
+    <toolWindow id="Web Browser"   secondary="false" icon="/icons/browser.png" anchor="right" factoryClass="org.jglanz.intellij.browser.BrowserToolWindowFactory" canCloseContents="false">
 
     </toolWindow>
   </extensions>
